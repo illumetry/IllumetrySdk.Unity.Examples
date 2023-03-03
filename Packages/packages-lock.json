@@ -8,13 +8,13 @@
       "hash": "d4c9d00e28fe11fd69e4bfea8f03c0b4bbebf08f"
     },
     "com.illumetry.sdk": {
-      "version": "https://github.com/illumetry/IllumetrySdk.Unity.git#1.1.0",
+      "version": "https://github.com/illumetry/IllumetrySdk.Unity.git#2.0.0",
       "depth": 0,
       "source": "git",
       "dependencies": {
         "com.antilatency.sdk": "4.0.0"
       },
-      "hash": "0ce7506577e511f97d74f673e21b3eab7ae43a36"
+      "hash": "70c7384d0d97c28cc337a7dc3af6661cb712c440"
     },
     "com.unity.collab-proxy": {
       "version": "1.15.18",

@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "com.antilatency.sdk": "https://github.com/AntilatencySDK/Release_4.0.0.git#subset-08698acaff1d4c734b31ff0b3d8cbaa2ba80b5d5",
-    "com.illumetry.sdk": "https://github.com/illumetry/IllumetrySdk.Unity.git#1.1.0",
+    "com.illumetry.sdk": "https://github.com/illumetry/IllumetrySdk.Unity.git#2.0.0",
     "com.unity.collab-proxy": "1.15.18",
     "com.unity.feature.development": "1.0.1",
     "com.unity.ide.rider": "3.0.14",
