@@ -21,16 +21,17 @@ public abstract class BaseStylusPointer: MonoBehaviour {
     /// </summary>
     public int Id => Stylus != null ? Stylus.Id : -1;
 
-    [SerializeField] private Stylus _stylus;
-    [SerializeField] private Rigidbody physicComponent;
-
+    [SerializeField] protected Stylus _stylus;
+    [SerializeField] protected Rigidbody physicComponent;
+    
     protected Dictionary<long, MonoBehaviour> _enteredObjects = new Dictionary<long, MonoBehaviour>();
 
     protected Dictionary<long, long> _colliderInstanceIdToEnteredObjectInstanceId = new Dictionary<long, long>();
     protected Dictionary<long, long> _enteredObjectInstanceIdToColliderInstanceId = new Dictionary<long, long>();
     protected Dictionary<long, Collider> _enteredObjectInstanceIdToColliders = new Dictionary<long, Collider>();
-    private HashSet<long> _startClickEventObjects = new HashSet<long>();
+    protected bool ButtonPhaseIsDown => _previousButtonPhase;
 
+    private HashSet<long> _startClickEventObjects = new HashSet<long>();
     private bool _previousButtonPhase = false;
 
     private void OnEnable() {
@@ -39,16 +40,30 @@ public abstract class BaseStylusPointer: MonoBehaviour {
     }
 
     private void OnDisable() {
-        ResetPointer();
         OnDeActivated();
+        ResetPointer();
     }
 
     private void OnDestroy() {
-        ResetPointer();
         OnDeActivated();
+        ResetPointer();
+    }
+
+    protected virtual void Reset() {
+
+        if (transform.parent != null) {
+            _stylus = transform.parent.GetComponentInChildren<Stylus>();
+        }
+
+        physicComponent = GetComponent<Rigidbody>();
     }
 
     protected virtual void OnActivated() {
+
+        if (physicComponent != null) {
+            physicComponent.isKinematic = true;
+        }
+
         if (Stylus != null) {
             Stylus.OnUpdatedButtonPhase += HandleButtonPhase;
             Stylus.OnUpdatedPose += HandleUpdatePointerPose;
@@ -132,6 +147,10 @@ public abstract class BaseStylusPointer: MonoBehaviour {
         _startClickEventObjects.Clear();
     }
 
+    protected bool IsStartedClick(long objectInstanceId) {
+        return _startClickEventObjects.Contains(objectInstanceId);
+    }
+        
     protected void HandleExitCollider(Collider col) {
 
         if (col == null) {
@@ -155,20 +174,24 @@ public abstract class BaseStylusPointer: MonoBehaviour {
         }
 
         if (_enteredObjects.ContainsKey(objectInstanceId)) {
-            long colliderInstanceId = _enteredObjectInstanceIdToColliderInstanceId[objectInstanceId];
 
-           
-            _enteredObjectInstanceIdToColliderInstanceId.Remove(objectInstanceId);
-            _enteredObjectInstanceIdToColliders.Remove(objectInstanceId);
-            _enteredObjects.Remove(objectInstanceId);
-            _startClickEventObjects.Remove(_colliderInstanceIdToEnteredObjectInstanceId[colliderInstanceId]);
-            _colliderInstanceIdToEnteredObjectInstanceId.Remove(colliderInstanceId);
+            RemoveObjectFromDictionaries(objectInstanceId);
 
             if (monoBehaviour.GetComponent<IStylusPointerHandler>() is IStylusPointerHandler stylusPointerHandler) {
                 HandleExitObject(stylusPointerHandler, monoBehaviour);
             }
         }
     } 
+
+    private void RemoveObjectFromDictionaries(long objectInstanceId) {
+
+        long colliderInstanceId = _enteredObjectInstanceIdToColliderInstanceId[objectInstanceId];
+        _enteredObjectInstanceIdToColliderInstanceId.Remove(objectInstanceId);
+        _enteredObjectInstanceIdToColliders.Remove(objectInstanceId);
+        _enteredObjects.Remove(objectInstanceId);
+        _startClickEventObjects.Remove(_colliderInstanceIdToEnteredObjectInstanceId[colliderInstanceId]);
+        _colliderInstanceIdToEnteredObjectInstanceId.Remove(colliderInstanceId);
+    }
 
     private void HandleButtonPhase(Stylus stylus, bool phase) {
 
@@ -180,7 +203,7 @@ public abstract class BaseStylusPointer: MonoBehaviour {
                     IStylusPointerClickHandler stylusPointerClickHandler = kvpObject.Value?.GetComponent<IStylusPointerClickHandler>();
                     HandleButtonPhaseDown(stylusPointerClickHandler, kvpObject.Value);
 
-                    if (_startClickEventObjects.Contains(kvpObject.Key) == false) {
+                    if (!_startClickEventObjects.Contains(kvpObject.Key)) {
                         _startClickEventObjects.Add(kvpObject.Key);
                     }
                 }

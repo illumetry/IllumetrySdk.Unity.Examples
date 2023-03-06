@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -20,8 +19,9 @@ namespace Illumetry.Unity.Demo
         private Quaternion _visualLocalRot;
         private Vector3 _visualLocalScale;
         private Collider _mainCollider;
-
+        private Pose _offsetPoseGrabber;
         public Collider ColliderForGrab => _mainCollider;
+        public bool IsAvaiableGrabByStylusPointer => GetCurrentGrabPointer() == null;
 
         private void Awake()
         {
@@ -57,8 +57,8 @@ namespace Illumetry.Unity.Demo
 
         private void UpdateGrabState()
         {
-            BaseStylusPointer stylusGrabber = GetCurrentGrabber();
-            bool isGrab = stylusGrabber != null;
+            BaseStylusPointer stylusPointer = GetCurrentGrabPointer();
+            bool isGrab = stylusPointer != null;
 
             if (isGrab)
             {
@@ -67,8 +67,8 @@ namespace Illumetry.Unity.Demo
                     _fixedJoint = gameObject.AddComponent<FixedJoint>();
                 }
 
-                SetVisualToParentGrabber(stylusGrabber);
-                _fixedJoint.connectedBody = stylusGrabber.PhysicComponent;
+                SaveOffsets(stylusPointer);
+                _fixedJoint.connectedBody = stylusPointer.PhysicComponent;
                 _rb.useGravity = false;
             }
             else
@@ -76,10 +76,11 @@ namespace Illumetry.Unity.Demo
                 if (_fixedJoint != null)
                 {
                     Destroy(_fixedJoint);
+                    _fixedJoint = null;
                 }
 
 
-                SetVisualParentMe();
+                ReturnVisualToBaseParent();
                 _rb.useGravity = true;
                 _rb.velocity = _lastGrabVelocity;
                 _rb.angularVelocity = _lastGrabAngularVelocity;
@@ -88,15 +89,23 @@ namespace Illumetry.Unity.Demo
 
         private void OnDestroy()
         {
-            SetVisualParentMe();
+            if (visual.parent == null) {
+                Destroy(visual.gameObject);
+            }
         }
 
-        private void SetVisualToParentGrabber(BaseStylusPointer baseStylusPointer)
+        private void SaveOffsets(BaseStylusPointer baseStylusPointer)
         {
-            visual.SetParent(baseStylusPointer.transform);
+            visual.SetParent(null);
+
+            Quaternion invPointerRotation = Quaternion.Inverse(baseStylusPointer.transform.rotation);
+            Vector3 invPointerPosition = -(invPointerRotation * baseStylusPointer.transform.position);
+
+            _offsetPoseGrabber.position = invPointerPosition + invPointerRotation * visual.transform.position;
+            _offsetPoseGrabber.rotation = invPointerRotation * visual.transform.rotation;
         }
 
-        private void SetVisualParentMe()
+        private void ReturnVisualToBaseParent()
         {
             visual.SetParent(transform);
             visual.transform.localPosition = _visualLocalPos;
@@ -104,7 +113,7 @@ namespace Illumetry.Unity.Demo
             visual.transform.localScale = _visualLocalScale;
         }
 
-        private BaseStylusPointer GetCurrentGrabber()
+        private BaseStylusPointer GetCurrentGrabPointer()
         {
             foreach (var kvp in _activePointers)
             {
@@ -136,7 +145,8 @@ namespace Illumetry.Unity.Demo
         }
 
         public void OnStylusPointerGrabbing(BaseStylusGrabberPointer baseStylusGrabberPointer) {
-          
+            visual.position = baseStylusGrabberPointer.transform.position + baseStylusGrabberPointer.transform.rotation * _offsetPoseGrabber.position;
+            visual.rotation = baseStylusGrabberPointer.transform.rotation * _offsetPoseGrabber.rotation;
         }
 
         public void OnEndStylusPointerGrab(BaseStylusGrabberPointer baseStylusGrabberPointer) {

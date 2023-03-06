@@ -2,36 +2,79 @@ using UnityEngine;
 
 public abstract class BaseStylusGrabberPointer : BaseStylusPointer
 {
-    private IStylusPointerGrabbable _grabbedObject;
-    protected IStylusPointerGrabbable GrabbedObject => _grabbedObject;
+    private IStylusPointerGrabbable _grabbingObject;
+    protected IStylusPointerGrabbable GrabbedObject => _grabbingObject;
+
+    private bool _btnIsDown = false;
 
     protected override void OnDeActivated() {
         base.OnDeActivated();
-        _grabbedObject = null;
+        _grabbingObject = null;
     }
 
     protected override void ResetPointer() {
         base.ResetPointer();
-        _grabbedObject = null;
+        _grabbingObject = null;
+    }
+
+    protected override void HandleExitObject(IStylusPointerHandler stylusPointerHandler, MonoBehaviour monoBehaviour) {
+
+        if (_grabbingObject != null && monoBehaviour.GetComponent<IStylusPointerGrabbable>() is IStylusPointerGrabbable grabbableObject) {
+
+            if(grabbableObject.ColliderForGrab != null && _grabbingObject.ColliderForGrab != null && grabbableObject.ColliderForGrab.GetInstanceID() == _grabbingObject.ColliderForGrab.GetInstanceID()) {
+                HandleEndGrabObject(_grabbingObject);
+                _grabbingObject = null;
+            }
+        }
+
+        base.HandleExitObject(stylusPointerHandler, monoBehaviour);
     }
 
     protected override void HandleButtonPhaseDown(IStylusPointerClickHandler stylusPointerClickHandler, MonoBehaviour monoBehaviour) {
         base.HandleButtonPhaseDown(stylusPointerClickHandler, monoBehaviour);
+        TryStartGrab(monoBehaviour);
+    }
 
-        if (_grabbedObject == null) {
-            _grabbedObject = monoBehaviour.GetComponent<IStylusPointerGrabbable>();
-            HandleStartGrabObject(_grabbedObject);
+    private void Update() {
+       
+        if(ButtonPhaseIsDown) {
+            if(_grabbingObject == null) {
+                foreach(var kvp in _enteredObjects) {
+
+                    if(!IsStartedClick(kvp.Key)) {
+                        continue;
+                    }
+
+                    TryStartGrab(kvp.Value);
+
+                    if(_grabbingObject != null) {
+                        break;
+                    }
+                        
+                }
+            }
+        }
+    }
+
+    private void TryStartGrab(MonoBehaviour monoBehaviour) {
+        if (_grabbingObject == null) {
+            IStylusPointerGrabbable grabbable = monoBehaviour.GetComponent<IStylusPointerGrabbable>();
+
+            if (grabbable != null && grabbable.IsAvaiableGrabByStylusPointer) {
+                _grabbingObject = grabbable;
+                HandleStartGrabObject(_grabbingObject);
+            }
+            else {
+                _grabbingObject = null;
+            }
         }
     }
 
     protected override void HandleButtonPhaseUp(IStylusPointerClickHandler stylusPointerClickHandler, MonoBehaviour monoBehaviour) {
         base.HandleButtonPhaseUp(stylusPointerClickHandler, monoBehaviour);
 
-        if (_grabbedObject != null) {
-            HandleEndGrabObject(_grabbedObject);
-        }
-
-        _grabbedObject = null;
+        HandleEndGrabObject(_grabbingObject);
+        _grabbingObject = null;
     }
 
     protected virtual void HandleStartGrabObject(IStylusPointerGrabbable grabbableObject) {
@@ -45,8 +88,8 @@ public abstract class BaseStylusGrabberPointer : BaseStylusPointer
     protected override void HandleUpdatePointerPose(Pose stylusPose, Vector3 stylusWorldVelocity, Vector3 stylusAngularVelocity) {
         base.HandleUpdatePointerPose(stylusPose, stylusWorldVelocity, stylusAngularVelocity);
 
-        if(_grabbedObject != null) {
-            _grabbedObject.OnStylusPointerGrabbing(this);
+        if(_grabbingObject != null) {
+            _grabbingObject.OnStylusPointerGrabbing(this);
         }
     }
 }

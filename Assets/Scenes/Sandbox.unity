@@ -1032,7 +1032,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6babad1323965af48aa89cda701b9055, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  stylusGoTemplate: {fileID: 8755327968814018342, guid: de4cabb41cd74be4c9208f446ae2eae1, type: 3}
+  stylusGoTemplate: {fileID: 8755327968814018342, guid: 2914bffa8c1db414396a599b4d9a5725, type: 3}
   _requaredTags:
   - Stylus
 --- !u!114 &1456070508

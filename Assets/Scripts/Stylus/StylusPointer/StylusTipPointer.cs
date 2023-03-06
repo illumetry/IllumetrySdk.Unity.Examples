@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
-public class StylusPointer: BaseStylusPointer {
+public class StylusTipPointer: BaseStylusGrabberPointer {
 
     [SerializeField] private Vector3 _triggerSize = Vector3.one;
     [SerializeField] private Vector3 _triggerOffset;
@@ -21,12 +21,26 @@ public class StylusPointer: BaseStylusPointer {
         _enteredObjects.Clear();
         _enteredColliders.Clear();
     }
+     
+    protected override void OnDeActivated() {
+        base.OnDeActivated();
+
+        foreach(var collider in _enteredColliders) {
+            HandleExitCollider(collider);
+        }
+
+        _enteredColliders.Clear();
+    }
 
     private void FixedUpdate() {
         UpdateColliders(_useOverlapBox);
     }
 
     private void UpdateColliders(bool useOverlapBox) {
+
+        if(GrabbedObject != null) {
+            return;
+        }
 
         Vector3 posTrigger = transform.position;
         Vector3 triggerSize = _triggerSize;
@@ -78,23 +92,23 @@ public class StylusPointer: BaseStylusPointer {
         }
         else {
             Collider nearestCollider = currentColliders.Length > 0 ? currentColliders[0] : null;
-            bool isFound = false;
+            bool found = false;
 
             if (nearestCollider != null) {
                 for (int j = noFoundColliders.Count - 1; j >= 0; j--) {
                     Collider pCollider = noFoundColliders[j];
 
                     if (pCollider == nearestCollider) {
-                        isFound = true;
+                        found = true;
                         noFoundColliders.RemoveAt(j);
                     }
                 }
 
-                if (!isFound) {
-                    _enteredColliders.Add(nearestCollider);
+                _enteredColliders.Add(nearestCollider);
+
+                if (!found) {
                     ColliderWasEnter(nearestCollider);
                 } else {
-                    _enteredColliders.Add(nearestCollider);
                     ColliderStay(nearestCollider);
                 }
             }
