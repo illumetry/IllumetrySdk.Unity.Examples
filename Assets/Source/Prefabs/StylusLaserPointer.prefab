@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 2826222343711958269}
   - component: {fileID: 6678213625295970280}
   m_Layer: 0
-  m_Name: StylusPointer
+  m_Name: StylusLaserPointer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -100,7 +100,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: dea36edec40320f4e9dcd4f7b95e6245, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

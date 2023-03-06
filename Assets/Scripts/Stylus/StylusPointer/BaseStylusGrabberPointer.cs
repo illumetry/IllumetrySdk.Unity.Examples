@@ -5,8 +5,6 @@ public abstract class BaseStylusGrabberPointer : BaseStylusPointer
     private IStylusPointerGrabbable _grabbingObject;
     protected IStylusPointerGrabbable GrabbedObject => _grabbingObject;
 
-    private bool _btnIsDown = false;
-
     protected override void OnDeActivated() {
         base.OnDeActivated();
         _grabbingObject = null;
@@ -50,7 +48,6 @@ public abstract class BaseStylusGrabberPointer : BaseStylusPointer
                     if(_grabbingObject != null) {
                         break;
                     }
-                        
                 }
             }
         }
