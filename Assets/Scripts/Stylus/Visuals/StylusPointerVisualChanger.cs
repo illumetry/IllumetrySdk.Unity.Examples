@@ -90,7 +90,7 @@ public class StylusPointerVisualChanger : MonoBehaviour {
         _previousPhaseStylusButton = isPressed;
     }
 
-    private void NextVisual() {
+    public void NextVisual() {
         _currentVisibleIndex++;
         if (_currentVisibleIndex >= _visuals.Count) {
             _currentVisibleIndex = 0;

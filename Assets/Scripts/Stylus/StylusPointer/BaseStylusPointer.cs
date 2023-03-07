@@ -23,9 +23,15 @@ public abstract class BaseStylusPointer: MonoBehaviour {
 
     [SerializeField] protected Stylus _stylus;
     [SerializeField] protected Rigidbody physicComponent;
-    
+
+    /// <summary>
+    /// Key is instance ID monoBehaviour.
+    /// </summary>
     protected Dictionary<long, MonoBehaviour> _enteredObjects = new Dictionary<long, MonoBehaviour>();
 
+    /// <summary>
+    /// Key is instance ID Collider.
+    /// </summary>
     protected Dictionary<long, long> _colliderInstanceIdToEnteredObjectInstanceId = new Dictionary<long, long>();
     protected Dictionary<long, long> _enteredObjectInstanceIdToColliderInstanceId = new Dictionary<long, long>();
     protected Dictionary<long, Collider> _enteredObjectInstanceIdToColliders = new Dictionary<long, Collider>();
@@ -197,26 +203,31 @@ public abstract class BaseStylusPointer: MonoBehaviour {
 
         if (_previousButtonPhase != phase) {
 
+            List<long> keysEnteredObjects = _enteredObjects.Keys.ToList();
+
             if (phase) {
-                foreach (var kvpObject in _enteredObjects) {
+                foreach (var key in keysEnteredObjects) {
 
-                    IStylusPointerClickHandler stylusPointerClickHandler = kvpObject.Value?.GetComponent<IStylusPointerClickHandler>();
-                    HandleButtonPhaseDown(stylusPointerClickHandler, kvpObject.Value);
+                    MonoBehaviour monoBehaviour = _enteredObjects[key];
+                    IStylusPointerClickHandler stylusPointerClickHandler = monoBehaviour?.GetComponent<IStylusPointerClickHandler>();
+                    HandleButtonPhaseDown(stylusPointerClickHandler, monoBehaviour);
 
-                    if (!_startClickEventObjects.Contains(kvpObject.Key)) {
-                        _startClickEventObjects.Add(kvpObject.Key);
+                    if (!_startClickEventObjects.Contains(key)) {
+                        _startClickEventObjects.Add(key);
                     }
                 }
             }
             else {
-                foreach (var kvpObject in _enteredObjects) {
 
-                    IStylusPointerClickHandler stylusPointerClickHandler = kvpObject.Value?.GetComponent<IStylusPointerClickHandler>();
-                    HandleButtonPhaseUp(stylusPointerClickHandler, kvpObject.Value);
+                foreach (var key in keysEnteredObjects) {
 
-                    if (_startClickEventObjects.Contains(kvpObject.Key)) {
-                        _startClickEventObjects.Remove(kvpObject.Key);
-                        HandleButtonClick(stylusPointerClickHandler, kvpObject.Value);
+                    MonoBehaviour monoBehaviour = _enteredObjects[key];
+                    IStylusPointerClickHandler stylusPointerClickHandler = monoBehaviour?.GetComponent<IStylusPointerClickHandler>();
+                    HandleButtonPhaseUp(stylusPointerClickHandler, monoBehaviour);
+
+                    if (_startClickEventObjects.Contains(key)) {
+                        _startClickEventObjects.Remove(key);
+                        HandleButtonClick(stylusPointerClickHandler, monoBehaviour);
                     }
                 }
             }
