@@ -1,10 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
 [RequireComponent(typeof(Rigidbody))]
 public class Cube : MonoBehaviour, IStylusPointerHandler, IStylusPointerGrabbable {
     public Transform visual;
+    public Collider ColliderForGrab => _mainCollider;
+    public bool IsAvaiableGrabByStylusPointer => _isGrabbing == false;
+
+    [SerializeField] private float _outlineWidth = 1f;
+    [SerializeField] private Outline _outline;
+
     private Dictionary<int, BaseStylusPointer> _activePointers = new Dictionary<int, BaseStylusPointer>();
     private Rigidbody _rb;
     private FixedJoint _fixedJoint;
@@ -18,8 +23,10 @@ public class Cube : MonoBehaviour, IStylusPointerHandler, IStylusPointerGrabbabl
     private Vector3 _visualLocalScale;
     private Collider _mainCollider;
     private Pose _offsetPoseGrabber;
-    public Collider ColliderForGrab => _mainCollider;
-    public bool IsAvaiableGrabByStylusPointer => GetCurrentGrabPointer() == null;
+
+    private float _startChangeOutline;
+    private float _previousWidthOutline;
+    private bool _isGrabbing;
 
     private void Awake() {
         _mainCollider = GetComponent<Collider>();
@@ -29,12 +36,18 @@ public class Cube : MonoBehaviour, IStylusPointerHandler, IStylusPointerGrabbabl
         _visualLocalPos = visual.localPosition;
         _visualLocalRot = visual.localRotation;
         _visualLocalScale = visual.localScale;
+
+        _previousWidthOutline = 0f;
     }
 
     private void OnEnable() {
         if (_rb == null) {
             _rb = GetComponent<Rigidbody>();
         }
+    }
+
+    public MonoBehaviour GetMonoBehaviour() {
+        return this;
     }
 
     private void SaveLastGrabVelocities(BaseStylusPointer baseStylusPointer) {
@@ -46,33 +59,6 @@ public class Cube : MonoBehaviour, IStylusPointerHandler, IStylusPointerGrabbabl
 
         _lastGrabVelocity = baseStylusPointer.Stylus.ExtrapolatedVelocity;
         _lastGrabAngularVelocity = baseStylusPointer.Stylus.ExtrapolatedAngularVelocity;
-    }
-
-    private void UpdateGrabState() {
-        BaseStylusPointer stylusPointer = GetCurrentGrabPointer();
-        bool isGrab = stylusPointer != null;
-
-        if (isGrab) {
-            if (_fixedJoint == null) {
-                _fixedJoint = gameObject.AddComponent<FixedJoint>();
-            }
-
-            SaveOffsets(stylusPointer);
-            _fixedJoint.connectedBody = stylusPointer.PhysicComponent;
-            _rb.useGravity = false;
-        }
-        else {
-            if (_fixedJoint != null) {
-                Destroy(_fixedJoint);
-                _fixedJoint = null;
-            }
-
-
-            ReturnVisualToBaseParent();
-            _rb.useGravity = true;
-            _rb.velocity = _lastGrabVelocity;
-            _rb.angularVelocity = _lastGrabAngularVelocity;
-        }
     }
 
     private void OnDestroy() {
@@ -98,20 +84,6 @@ public class Cube : MonoBehaviour, IStylusPointerHandler, IStylusPointerGrabbabl
         visual.transform.localScale = _visualLocalScale;
     }
 
-    private BaseStylusPointer GetCurrentGrabPointer() {
-        foreach (var kvp in _activePointers) {
-            return kvp.Value;
-        }
-
-        return null;
-    }
-
-    private void Update() {
-        if (Input.GetKeyDown(KeyCode.R)) {
-            ResetPoseCube();
-        }
-    }
-
     public void ResetPoseCube() {
         if (_rb != null) {
             _rb.velocity = Vector3.zero;
@@ -123,8 +95,15 @@ public class Cube : MonoBehaviour, IStylusPointerHandler, IStylusPointerGrabbabl
     }
 
     public void OnStartStylusPointerGrab(BaseStylusGrabberPointer baseStylusGrabberPointer) {
-        _activePointers[baseStylusGrabberPointer.Stylus.Id] = baseStylusGrabberPointer;
-        UpdateGrabState();
+
+        if (_fixedJoint == null) {
+            _fixedJoint = gameObject.AddComponent<FixedJoint>();
+        }
+
+        SaveOffsets(baseStylusGrabberPointer);
+        _fixedJoint.connectedBody = baseStylusGrabberPointer.PhysicComponent;
+        _rb.useGravity = false;
+        _isGrabbing = true;
     }
 
     public void OnStylusPointerGrabbing(BaseStylusGrabberPointer baseStylusGrabberPointer) {
@@ -133,20 +112,67 @@ public class Cube : MonoBehaviour, IStylusPointerHandler, IStylusPointerGrabbabl
     }
 
     public void OnEndStylusPointerGrab(BaseStylusGrabberPointer baseStylusGrabberPointer) {
-        _activePointers.Remove(baseStylusGrabberPointer.Stylus.Id);
-        SaveLastGrabVelocities(baseStylusGrabberPointer);
-        UpdateGrabState();
-    }
 
-    public MonoBehaviour GetMonoBehaviour() {
-        return this;
+        SaveLastGrabVelocities(baseStylusGrabberPointer);
+
+        if (_fixedJoint != null) {
+            Destroy(_fixedJoint);
+            _fixedJoint = null;
+        }
+
+
+        ReturnVisualToBaseParent();
+        _rb.useGravity = true;
+        _rb.velocity = _lastGrabVelocity;
+        _rb.angularVelocity = _lastGrabAngularVelocity;
+        _isGrabbing = false;
     }
 
     public void OnStylusPointerWasEnter(BaseStylusPointer baseStylusPointer) {
+        _outline.enabled = true;
 
+        if (_activePointers.Count == 0) {
+            _startChangeOutline = Time.time;
+            _previousWidthOutline = _outline.OutlineWidth;
+        }
+
+        _activePointers[baseStylusPointer.Id] = baseStylusPointer;
     }
 
     public void OnStylusPointerWasExit(BaseStylusPointer baseStylusPointer) {
 
+        bool hasPointers = false;
+        if (_activePointers.Count > 0) {
+            hasPointers = true;
+        }
+
+        _activePointers.Remove(baseStylusPointer.Id);
+
+        if (_activePointers.Count == 0 && hasPointers) {
+            _startChangeOutline = Time.time;
+            _previousWidthOutline = _outline.OutlineWidth;
+        }
+    }
+
+    private void Update() {
+        if (Input.GetKeyDown(KeyCode.R)) {
+            ResetPoseCube();
+        }
+
+        //Update otline width.
+
+        if (_outline != null) {
+            float outlineWidthTarget = _activePointers.Count == 0 ? 0f : _outlineWidth;
+
+            float elapsedTime = Time.time - _startChangeOutline;
+            float progressChangeWidth = Mathf.Clamp01(elapsedTime / 0.2f);
+            _outline.OutlineWidth = Mathf.Lerp(_previousWidthOutline, outlineWidthTarget, progressChangeWidth);
+
+            if (progressChangeWidth >= 1f) {
+                if (outlineWidthTarget == 0) {
+                    _outline.enabled = false;
+                }
+            }
+        }
     }
 }
