@@ -115,7 +115,7 @@ public abstract class BaseStylusPointer: MonoBehaviour {
         }
 
         IStylusPointerHandler stylusPointerHandler = col.GetComponent<IStylusPointerHandler>();
-        MonoBehaviour monoBehaviour = stylusPointerHandler?.GetMonoBehaviour();
+        MonoBehaviour monoBehaviour = stylusPointerHandler?.GetMonoBehaviourForStylusPointer();
 
         if (stylusPointerHandler != null && monoBehaviour != null) {
 

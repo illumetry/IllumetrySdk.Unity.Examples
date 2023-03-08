@@ -46,7 +46,7 @@ public class Cube : MonoBehaviour, IStylusPointerHandler, IStylusPointerGrabbabl
         }
     }
 
-    public MonoBehaviour GetMonoBehaviour() {
+    public MonoBehaviour GetMonoBehaviourForStylusPointer() {
         return this;
     }
 

@@ -23,7 +23,7 @@ public class SampleStylusPointerToUiElementProvider : MonoBehaviour, IStylusPoin
         }
     }
 
-    public MonoBehaviour GetMonoBehaviour() {
+    public MonoBehaviour GetMonoBehaviourForStylusPointer() {
         return this;
     }
 
