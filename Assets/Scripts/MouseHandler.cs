@@ -15,7 +15,9 @@ public class MouseHandler : MonoBehaviour
 
     [SerializeField] private Illumetry.Unity.Display _display;
     private bool focused = true;
-    
+
+    private CursorLockMode _previousLockStateMouse;
+    private bool _previousVisibleCursos = false;
    
     [StructLayout(LayoutKind.Sequential)]
     public struct Point {
@@ -30,22 +32,27 @@ public class MouseHandler : MonoBehaviour
         focused = focus;
     }
 
+    private void OnEnable() {
 
-    private void Awake() {
+        _previousLockStateMouse = Cursor.lockState;
+        _previousVisibleCursos = Cursor.visible;
+
         Cursor.lockState = CursorLockMode.Confined;
         Cursor.visible = false;
-    }
 
-    private void OnEnable() {
         RendererLCD.OnBeforeRendererL += OnBeforeRender;
         RendererLCD.OnBeforeRendererR += OnBeforeRender;
         MonoRendererLCD.OnBeforeRenderer += OnBeforeRender;
     }
 
     private void OnDisable() {
+
         RendererLCD.OnBeforeRendererL -= OnBeforeRender;
         RendererLCD.OnBeforeRendererR -= OnBeforeRender;
         MonoRendererLCD.OnBeforeRenderer -= OnBeforeRender;
+
+        Cursor.lockState = _previousLockStateMouse;
+        Cursor.visible = _previousVisibleCursos;
     }
 
     private Rect GetCameraViewportRect(bool leftEye) {
